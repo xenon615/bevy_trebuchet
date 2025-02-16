@@ -10,6 +10,11 @@ Keep this in mind if you plan to use it. However, you have every right to copy, 
 Also, I would be glad to receive any advice. ([xenon615 on Discord](https://discordapp/users/xenon615))
 
 ## Usage
+Add to your dependencies
+```
+bevy_trebuchet = {git = "https://github.com/xenon615/bevy_trebuchet"}
+
+```
 
 Please refer to /examples/basic.rs for example. 
 
