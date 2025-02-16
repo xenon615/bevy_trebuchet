@@ -36,7 +36,7 @@ Therefore, the immediate plans are to allow it to be installed at any angle rela
 (currently, an attempt to install it not strictly north causes its destruction) (IDK at the moment, why?)  
 Next, at the moment trebuchet starts working automatically after creation  after which it starts working automatically.
 So need add some control ( start / stop at least)  
-Well, I'll add something else
+Well, I'll add something else.
 
 
 
