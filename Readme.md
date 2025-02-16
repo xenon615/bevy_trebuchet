@@ -1,5 +1,6 @@
 # bevy_trebuchet
-### Bevy crate for creation  of an ancient siege weapon known as a trebuchet.  
+### Bevy crate for creation  of an ancient siege weapon known as a trebuchet.
+Avian3D is used as a physics engine  
 
 ## Why ?
 I decided to make a trebuchet from the [Project Siege](https://github.com/xenon615/siege) as a crate.  
@@ -17,8 +18,8 @@ Also, I would be glad to receive any advice. ([xenon615 on Discord](https://disc
 ## Usage
 Add to your dependencies
 ```
+avian3d = "0.2.1"
 bevy_trebuchet = {git = "https://github.com/xenon615/bevy_trebuchet"}
-
 ```
 
 Please refer to /examples/basic.rs for example. 

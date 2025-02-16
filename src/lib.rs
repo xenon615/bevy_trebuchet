@@ -169,8 +169,6 @@ fn explore(
         }
     }
     cmd.entity(tr.entity()).insert(parts);
-    // #[cfg(debug_assertions)]
-    // info!("Trebuchet {:?} explored", tr.entity());
 }
 
 // ---
@@ -303,9 +301,6 @@ fn setup(
     ));
 
     cmd.entity(treb_e).insert(StateIdle);
-    // #[cfg(debug_assertions)]
-    // info!("trebuchet {:?} ready", treb_e);
-    
 } 
 
 // ---
@@ -314,8 +309,6 @@ fn enter_idle(
     trigger: Trigger<OnAdd, StateIdle>,
     mut cmd: Commands,
 ) {
-    // #[cfg(debug_assertions)]
-    // info!("Trebuchet {:?} entered idle", trigger.entity());
     cmd.entity(trigger.entity()).insert(
         Interval(Timer::new(Duration::from_secs(fastrand::u64(5..10)), TimerMode::Once))
     );
@@ -360,8 +353,6 @@ fn enter_tension(
         Link
     )).id();
     parts.link = Some(joint_id);
-    // #[cfg(debug_assertions)]
-    // info!("trebuchet {:?} entered tension ", treb_e);
 }
 
 // ---
@@ -383,8 +374,6 @@ fn do_tension(
             .remove::<StateTension>()
             .insert(StateArming)
             ;
-            // #[cfg(debug_assertions)]
-            // info!("trebuchet {:?} exited tension  ", treb_e);
             continue;
         }
 
@@ -468,8 +457,6 @@ fn do_arming(
                     cmd.entity(ball_e)
                     .insert(LinearVelocity(Vec3::ZERO))
                     ;
-                    // #[cfg(debug_assertions)]
-                    // info!("trebuchet {:?} armed ", p);
                 }
             }
             
