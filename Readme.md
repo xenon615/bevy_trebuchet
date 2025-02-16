@@ -1,8 +1,8 @@
 # bevy_trebuchet
 ### Bevy crate for creation  of an ancient siege weapon known as a trebuchet.  
 
-## Why 
-I decided to make a trebuchet from the [Project](https://github.com/xenon615/siege) as a crate.  
+## Why ?
+I decided to make a trebuchet from the [Project Siege](https://github.com/xenon615/siege) as a crate.  
 Why ? May be for convenience, may be for learning how to make crates, IDK :) .  
 
 ![Trebuchet](img/image1.png)
