@@ -36,13 +36,15 @@ In addition to the default settings, there are the following settings:
 ```rust
 
 pub struct TrebuchetPlugin {
-    /// the density of the counterweight material, well you get the idea, the heavier it is, the further the projectile will be thrown, but it can fall apart, 9.5 by default
+    /// the density of the counterweight material, well you get the idea, 
+    /// the heavier it is, the further the projectile will be thrown, but it can fall apart, 9.5 by default
     pub counterweight_density: f32,
     /// layer mask of ball collider, 666 by default
     pub ball_layer_mask: u32, 
-    /// dot product between direction from trebuchet center to ball  and Y axis. Working values are approximately between 0.7 and 0.99.lower value means steeper trajectory
+    /// dot product between direction from trebuchet center to ball  and Y axis. Working values 
+    /// are approximately between 0.7 and 0.99.lower value means steeper trajectory
     pub unhooking_dot: f32,
-    /// again, nothing incomprehensible, the denser the harder it will hit, if it can take off, of course)
+    /// again, nothing incomprehensible, the denser the harder it will hit, if it can take off, of course, 14.5 by default
     pub ball_density: f32
 }
 ```
