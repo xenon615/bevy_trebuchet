@@ -1,26 +1,63 @@
 
 use bevy::{
     prelude::*,
-    scene::SceneInstanceReady
+    scene::SceneInstanceReady,
+    asset::embedded_asset
 };
 use avian3d::prelude::*;
 use std::time::Duration;
 mod ball;
-use ball::{Ball, BallSpawn, Released, BALL_RADIUS};
-pub struct TrebuchetPlugin;
+use ball::{BallSpawn, Released, BALL_RADIUS};
+
+#[derive(Resource)]
+pub(crate) struct TrebuchetSettings {
+    counterweight_density: f32,
+    ball_layer_mask: u32,
+    unhooking_dot: f32,
+    ball_density: f32
+
+}
+
+pub struct TrebuchetPlugin {
+    pub counterweight_density: f32,
+    pub ball_layer_mask: u32, 
+    pub unhooking_dot: f32,
+    pub ball_density: f32
+}
+
+impl Default for TrebuchetPlugin {
+    fn default() -> Self {
+        Self { 
+            counterweight_density: CW_DENSITY,
+             ball_layer_mask: 666,
+             unhooking_dot:0.99,
+             ball_density:BALL_DENSITY
+        }
+    }
+}
+
 impl Plugin for TrebuchetPlugin {
     fn build(&self, app: &mut App) {
+
+
+        embedded_asset!(app, "files/trebuchet.glb");
         app
+        .insert_resource(TrebuchetSettings{
+            counterweight_density:self.counterweight_density,
+            ball_layer_mask: self.ball_layer_mask,
+            unhooking_dot: self.unhooking_dot,
+            ball_density: self.ball_density,
+        })
         .add_plugins(ball::BallPlugin)
+        .add_systems(Update, reload.run_if(any_with_component::<Interval>))
+        .add_systems(Update, do_tension.run_if(any_with_component::<StateTension>))
+        .add_systems(Update, do_loose.run_if(any_with_component::<StateLoose>))
         .add_observer(new)
         .add_observer(setup)
         .add_observer(enter_idle)
         .add_observer(enter_tension)
         .add_observer(enter_arming)
-        .add_systems(Update, reload.run_if(any_with_component::<Interval>))
-        .add_systems(Update, do_tension.run_if(any_with_component::<StateTension>))
-        .add_systems(Update, do_arming.run_if(on_event::<CollisionEnded>))
-        .add_systems(Update, do_loose.run_if(any_with_component::<StateLoose>))
+        .add_observer(do_arming)
         ;    
     }
 }
@@ -28,49 +65,53 @@ impl Plugin for TrebuchetPlugin {
 // ---
 
 #[derive(Resource)]
-pub struct TrebuchetModel(Handle<Scene>);
+struct TrebuchetModel(Handle<Scene>);
 
 #[derive(Event)]
 pub struct NewTrebuchets(pub Vec<Transform>);
 
 #[derive(Component)]
-pub struct Arm;
+struct Arm;
 
 #[derive(Component)]
-pub struct Pivot;
+struct Pivot;
 
 #[derive(Component)]
-pub struct CounterWeight;
+struct CounterWeight;
 
 #[derive(Component)]
-pub struct Lock;
+struct Lock;
 
 #[derive(Component)]
-pub struct Bar;
+struct Bar;
 
 #[derive(Component)]
-pub struct Trebuchet;
+struct Trebuchet;
 
 #[derive(Component)]
-pub struct  SlingEnd;
+struct  SlingEnd;
+
+// ---
 
 #[derive(Component)]
-pub struct StateIdle;
+struct StateIdle;
 
 #[derive(Component)]
-pub struct StateTension;
+struct StateTension;
 
 #[derive(Component)]
-pub struct StateArming;
+struct StateArming;
 
 #[derive(Component)]
-pub struct StateLoose;
+struct StateLoose;
+
+// ---
 
 #[derive(Component)]
-pub struct Link;
+struct Link;
 
 #[derive(Component)]
-pub struct Parts {
+struct Parts {
     pivot: Entity,
     se: Entity,
     arm: Entity,
@@ -92,7 +133,7 @@ impl Parts {
 }
 
 #[derive(Component)]
-pub struct Interval(pub Timer);
+struct Interval(Timer);
 
 // -- CONSTANTS --
 
@@ -108,19 +149,20 @@ const SLING_ELEMENT_DENSITY: f32 = 200.;  // 100
 const SLING_ELEMENT_COUNT: u32 = 8;
 const SLING_LEN: f32 = ARM_DIM.z * 0.75;
 const UNHOOKING_DOT: f32 = 0.99;
+const BALL_DENSITY: f32 = 14.5;
 
 const TREBUCHET_DIM: Vec3 = Vec3::new(4., 8., 16.);  // ROUGLY
 
 // ---
 
-pub fn new (
+fn new (
     tr: Trigger<NewTrebuchets>,
     tho: Option<Res<TrebuchetModel>>,
     assets: ResMut<AssetServer>,
     mut cmd: Commands,
 ) {
     let th  = tho.map_or_else(|| {
-        let h = assets.load(GltfAssetLabel::Scene(0).from_asset(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/models/trebuchet.glb")));
+        let h = assets.load(GltfAssetLabel::Scene(0).from_asset("embedded://bevy_trebuchet/files/trebuchet.glb"));
         cmd.insert_resource(TrebuchetModel(h.clone()));
         h
     }, |a| a.0.clone());
@@ -146,7 +188,7 @@ fn explore(
     mut cmd: Commands,
 ) {
     let mut parts = Parts::new();
-    for c in children.iter_descendants_depth_first(tr.entity()) {
+    for c in children.iter_descendants_depth_first(tr.target()) {
         let Ok(ex) = props.get(c) else {
             continue;
         }; 
@@ -168,7 +210,7 @@ fn explore(
             cmd.entity(c).insert(Collider::cuboid(2., 0.125, 8.));
         }
     }
-    cmd.entity(tr.entity()).insert(parts);
+    cmd.entity(tr.target()).insert(parts);
 }
 
 // ---
@@ -180,8 +222,9 @@ fn setup(
     mut parts_q: Query<&mut Parts>,
     arm_q: Query<&Transform, With<Arm>>,
     mut cmd: Commands,
+    settings: Res<TrebuchetSettings>
 ) {
-    let treb_e = tr.entity();
+    let treb_e = tr.target();
     let mut parts = parts_q.get_mut(treb_e).unwrap(); 
     cmd.entity(parts.arm)
     .insert((
@@ -209,7 +252,7 @@ fn setup(
     .insert((
         RigidBody::Dynamic,
         // RigidBody::Static,
-        MassPropertiesBundle::from_shape(&Collider::cylinder(4., 2.), CW_DENSITY)
+        MassPropertiesBundle::from_shape(&Collider::cylinder(4., 2.), settings.counterweight_density)
     ));
             
     let joint_id = cmd.spawn(
@@ -309,7 +352,7 @@ fn enter_idle(
     trigger: Trigger<OnAdd, StateIdle>,
     mut cmd: Commands,
 ) {
-    cmd.entity(trigger.entity()).insert(
+    cmd.entity(trigger.target()).insert(
         Interval(Timer::new(Duration::from_secs(fastrand::u64(5..10)), TimerMode::Once))
     );
 }
@@ -340,7 +383,7 @@ fn enter_tension(
     mut parts_q: Query<&mut Parts>,
     mut cmd: Commands,
 ) {
-    let treb_e = trigger.entity();
+    let treb_e = trigger.target();
     let Ok(mut parts) = parts_q.get_mut(treb_e) else {
         return;
     };
@@ -410,7 +453,7 @@ fn enter_arming(
     mut cmd: Commands,
     treb_q: Query<&Transform>,
 ) {
-    let treb_e = trigger.entity();
+    let treb_e = trigger.target();
 
     let Ok(t) = treb_q.get(treb_e) else {
         return;
@@ -421,47 +464,40 @@ fn enter_arming(
 // ---
 
 fn do_arming(
-    mut collision_events: EventReader<CollisionEnded>,
+    tr: Trigger<OnCollisionEnd>,
     se_q: Query<Entity, With<SlingEnd>>,
-    ball_q: Query<Entity, (With<Ball>, Without<Released>)>,
-    parent_q: Query<&Parent>,
+    parent_q: Query<&ChildOf>,
     parts_q: Query<&Parts>,
     mut cmd: Commands
-
 ) {
-    for CollisionEnded(e1, e2)  in  collision_events.read() {
-        if  se_q.contains(*e1)  &&  ball_q.contains(*e2) ||
-            se_q.contains(*e2)  &&  ball_q.contains(*e1)
-         {
-            let (se_e, ball_e) = if se_q.contains(*e1) {(*e1, *e2)} else {(*e2, *e1)};
+    let Some(se_e) = tr.event().body else {
+        return;
+    }; 
+    if !se_q.contains(se_e) {
+        return;
+    }
+    let ball_e = tr.target();
 
-            for p in parent_q.iter_ancestors(se_e) {
-                if let Ok(parts) =  parts_q.get(p) {
-
-                    let Some(link_e) = parts.link else {
-                        continue;
-                    };
-
-                    cmd.entity(link_e)
-                    .insert(
-                        DistanceJoint::new(se_e, ball_e)
-                        .with_rest_length(BALL_RADIUS * 2.)
-                        // .with_compliance(0.001)
-                        .with_linear_velocity_damping(1000.)
-                    );
-
-                    cmd.entity(p)
-                    .remove::<StateArming>()
-                    .insert(StateLoose);
-
-                    cmd.entity(ball_e)
-                    .insert(LinearVelocity(Vec3::ZERO))
-                    ;
-                }
-            }
-            
-        } 
-    } 
+    for p in parent_q.iter_ancestors(se_e) {
+        if let Ok(parts) =  parts_q.get(p) {
+            let Some(link_e) = parts.link else {
+                continue;
+            };
+            cmd.entity(link_e)
+            .insert(
+                DistanceJoint::new(se_e, ball_e)
+                .with_rest_length(BALL_RADIUS * 2.)
+                .with_linear_velocity_damping(1000.)
+            );
+            cmd.entity(p)
+            .remove::<StateArming>()
+            .insert(StateLoose);
+            cmd.entity(ball_e)
+            .insert(LinearVelocity(Vec3::ZERO))
+            ;
+            break;
+        }
+    }
 }
 
 // ---
@@ -470,7 +506,8 @@ fn do_loose(
     mut treb_q: Query<(Entity, &mut Parts, &Transform), (With<Trebuchet>, With<StateLoose>)>,
     mut cmd: Commands,
     se_q: Query<&GlobalTransform>,
-    link_q: Query<&DistanceJoint>
+    link_q: Query<&DistanceJoint>,
+    settings: Res<TrebuchetSettings>
 ) {
 
     for (treb_e, mut treb_parts, treb_t)  in treb_q.iter_mut() {
@@ -489,7 +526,7 @@ fn do_loose(
         let center = treb_t.translation  + Vec3::Y * TREBUCHET_DIM.y * 0.5;
         let to_se = (se_t.translation() - center).normalize();
         let dot = to_se.dot(Vec3::Y);
-        if dot > UNHOOKING_DOT {
+        if dot > settings.unhooking_dot {
             cmd.entity(link_j.entity2).insert(Released);
             cmd.entity(link).despawn();
             cmd.entity(treb_e)

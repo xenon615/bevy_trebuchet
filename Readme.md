@@ -1,6 +1,6 @@
 # bevy_trebuchet
 ### Bevy crate for creation  of an ancient siege weapon known as a trebuchet.
-Avian3D is used as a physics engine  
+Avian3D is used as a physics engine. (Pure physics, no animation used)
 
 ## Why ?
 I decided to make a trebuchet from the [Project Siege](https://github.com/xenon615/siege) as a crate.  
@@ -18,9 +18,46 @@ Also, I would be glad to receive any advice. ([xenon615 on Discord](https://disc
 ## Usage
 Add to your dependencies
 ```
-avian3d = "0.2.1"
+avian3d = "0.3.1"
 bevy_trebuchet = {git = "https://github.com/xenon615/bevy_trebuchet"}
 ```
+
+```rust
+use bevy_trebuchet::{NewTrebuchets, TrebuchetPlugin};
+
+```
+
+```rust
+
+.add_plugins(TrebuchetPlugin::default())
+
+```
+In addition to the default settings, there are the following settings:
+```rust
+
+pub struct TrebuchetPlugin {
+    /// the density of the counterweight material, well you get the idea, the heavier it is, the further the projectile will be thrown, but it can fall apart, 9.5 by default
+    pub counterweight_density: f32,
+    /// layer mask of ball collider, 666 by default
+    pub ball_layer_mask: u32, 
+    /// dot product between direction from trebuchet center to ball  and Y axis. Working values are approximately between 0.7 and 0.99.lower value means steeper trajectory
+    pub unhooking_dot: f32,
+    /// again, nothing incomprehensible, the denser the harder it will hit, if it can take off, of course)
+    pub ball_density: f32
+}
+```
+
+In order for the trebuchet(s) to appear, you need to do the following:
+
+```rust
+    cmd.trigger(NewTrebuchets(vec![
+        Transform::from_xyz(0., 0., 0.),
+        Transform::from_xyz(15., 0., 0.),
+    ]));
+
+```
+
+
 
 Please refer to /examples/basic.rs for example. 
 

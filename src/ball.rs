@@ -5,6 +5,8 @@ use bevy::{
 use avian3d::prelude::*;
 use std::time::Duration;
 
+use crate::TrebuchetSettings;
+
 pub struct BallPlugin;
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
@@ -34,7 +36,7 @@ pub struct BallSpawn(pub Vec3);
 #[derive(Resource)]
 pub struct BallMM(Handle<Mesh>, Handle<StandardMaterial>);
 
-pub const BALL_DENSITY: f32 = 14.5;
+
 pub const BALL_RADIUS: f32 = 0.55;
 
 // ---
@@ -47,7 +49,7 @@ fn startup(
     cmd.insert_resource(
         BallMM(
             meshes.add(Sphere::new(BALL_RADIUS)),
-            materials.add(Color::hsl(150., 1.0, 0.5))
+            materials.add(Color::hsl(150., 1.0, 0.5)),
         )
     );  
 }
@@ -57,26 +59,26 @@ fn startup(
 fn spawn(
     trigger: Trigger<BallSpawn>,
     mut cmd: Commands,
-    mm: Res<BallMM>
+    mm: Res<BallMM>,
+    setings: Res<TrebuchetSettings>
 ) {
     let event = trigger.event();
 
     cmd.spawn((
         Mesh3d(mm.0.clone()),
         MeshMaterial3d(mm.1.clone()),
-        RigidBody::Dynamic,
-        Restitution::new(0.).with_combine_rule(CoefficientCombine::Min),
         NotShadowCaster,
         NotShadowReceiver,
-        Collider::sphere(BALL_RADIUS), 
-        ColliderDensity(BALL_DENSITY), 
         Ball, 
         Name::new("Ball"), 
         Transform::from_translation(event.0),
         LifeTime(Timer::new(Duration::from_secs(60), TimerMode::Once)),
-
-        // CollisionLayers::new(GameLayer::Attacker, [LayerMask::ALL]),
-    
+        RigidBody::Dynamic,
+        Restitution::new(0.).with_combine_rule(CoefficientCombine::Min),
+        Collider::sphere(BALL_RADIUS), 
+        ColliderDensity(setings.ball_density), 
+        CollisionEventsEnabled,
+        CollisionLayers::new(LayerMask(setings.ball_layer_mask), LayerMask::ALL)
     ));
     
     

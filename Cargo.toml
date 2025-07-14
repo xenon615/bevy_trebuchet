@@ -14,7 +14,8 @@ opt-level = 3
 codegen-units = 1
 
 [dependencies.bevy]
-version = "0.15.2"
+version = "0.16.1"
+# default-features = true
 default-features = false
 features = [
     "multi_threaded",
@@ -23,7 +24,8 @@ features = [
 ]
 
 [dev-dependencies.bevy]
-version = "0.15.2"
+version = "0.16.1"
+# default-features = true
 default-features = false
 features = [
     "multi_threaded",
@@ -37,9 +39,11 @@ features = [
     "png",	
 ] 
 
+
 [dependencies]
 fastrand = "2.3.0"
-avian3d = "0.2.1"
+avian3d = "0.3.1"
 
+# bevy = {git = "https://github.com/bevyengine/bevy.git", branch = "main", default-features = true, features = ["dynamic_linking"]}
 [[example]]
 name = "basic"

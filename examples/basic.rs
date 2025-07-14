@@ -1,19 +1,32 @@
 use avian3d::{prelude::*, PhysicsPlugins};
 use bevy::{
-    core_pipeline::tonemapping::Tonemapping, pbr::{NotShadowCaster, NotShadowReceiver}, prelude::*
+    core_pipeline::tonemapping::Tonemapping, pbr::{NotShadowCaster, NotShadowReceiver}, prelude::*,
+    // render::{
+    //     RenderApp,
+    //     batching::gpu_preprocessing::{GpuPreprocessingSupport, GpuPreprocessingMode}
+    // }
 };
+
+// Add this
 use bevy_trebuchet::{NewTrebuchets, TrebuchetPlugin};
+
+
 fn main() {
-    App::new()
-    .insert_resource(ClearColor(Color::BLACK))
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::BLACK))
     .add_plugins((
         DefaultPlugins,
-        TrebuchetPlugin,
         PhysicsPlugins::default(),
-        // PhysicsDebugPlugin::default()
+        TrebuchetPlugin::default()
     ))
-    .add_systems(Startup, startup)
-    .run();
+    .add_systems(Startup, startup);
+
+    // app.sub_app_mut(RenderApp)
+    // .insert_resource(GpuPreprocessingSupport {
+    //     max_supported_mode: GpuPreprocessingMode::PreprocessingOnly,
+    // });
+
+    app.run();
 }
 
 fn startup(
@@ -21,12 +34,11 @@ fn startup(
     mut al : ResMut<AmbientLight>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>
-
 ) {
     al.brightness = 200.;
     cmd.spawn((
         Camera3d::default(),
-        Transform::from_xyz(10., 15., 50.).looking_at(Vec3::ZERO.with_y(10.), Vec3::Y),
+        Transform::from_xyz(20., 15., 50.).looking_at(Vec3::ZERO.with_y(10.), Vec3::Y),
         Tonemapping::ReinhardLuminance
     ));
     cmd.spawn((
@@ -44,16 +56,16 @@ fn startup(
         RigidBody::Static
     ));
 
+    //  Add Trebuchets
+    
     cmd.trigger(NewTrebuchets(vec![
         Transform::from_xyz(0., 0., 0.),
         Transform::from_xyz(15., 0., 0.),
     ]));
 
     let material = materials.add(Color::BLACK);
-
     let dummy_dim = Vec3::new(4., 4., 4.);
     let mesh_h = meshes.add(Cuboid::from_size(dummy_dim));
-
     let wall_pos = Vec3::new(0., 0., -150.);    
     for pos in wall(wall_pos + Vec3::new(-44., 0., -40.), dummy_dim, 110) {    
         cmd.spawn((
@@ -87,7 +99,6 @@ fn wall(start: Vec3, dummy_dim: Vec3, dummies_count: u32) -> impl Iterator<Item 
             pos.y += 1.1 * dummy_dim.y;
         } 
         in_row += 1;
-        
         pos += step;
         pos
     })
